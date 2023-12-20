@@ -1,6 +1,7 @@
 package com.example.serverandclientapp
 
 import java.io.BufferedReader
+import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.io.PrintWriter
@@ -8,15 +9,28 @@ import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 
+@Volatile
+private var isServerRunning = false
 
-fun startServer(ipAddress: String, isServerRunning: Boolean) {
+fun startServer() {
+    isServerRunning = true
+}
+
+fun stopServer() {
+    isServerRunning = false
+}
+
+fun server(ipAddress: String) {
+    var serverSocket: ServerSocket? = null
     try {
         println("Server ${if (isServerRunning) "Start" else "Stop"}")
-       val serverSocket = ServerSocket()
+        serverSocket = ServerSocket()
         serverSocket.bind(InetSocketAddress(ipAddress, 4001))
         println("Server is listening to :: ${serverSocket.localSocketAddress}")
 
-        while (isServerRunning) {
+        println("Is server Running $isServerRunning")
+        while (isServerRunning) { // Add a condition to exit the loop
+
             val clientSocket = serverSocket.accept()
             println("Accept $clientSocket")
             val clientHandlerThread = Thread {
@@ -24,17 +38,23 @@ fun startServer(ipAddress: String, isServerRunning: Boolean) {
             }
             println("Process :: Start Client Handler")
             clientHandlerThread.start()
-
         }
-
     } catch (e: Exception) {
         e.printStackTrace()
+    } finally {
+        try {
+            serverSocket?.close() // Close the server socket in the finally block
+            println("Server is stopped")
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
     }
 }
 
 
 private fun handleClient(clientSocket: Socket) {
     try {
+
         val reader = BufferedReader(InputStreamReader(clientSocket.getInputStream()))
         /*val writer = PrintWriter(clientSocket.getOutputStream(), true)*/
 
@@ -50,17 +70,28 @@ private fun handleClient(clientSocket: Socket) {
             println("No data received from client.")
         }
 
+
         /*writer.println("Server received: $clientMessage")*/
         println("Process :: Client disconnected")
         reader.close()
+
     } catch (e: Exception) {
         println("Error")
         println(e)
     } finally {
         clientSocket.close()
         println("Process :: Client Socket Close")
+        print_Line()
     }
 
+}
+
+
+fun print_Line() {
+    repeat(30) {
+        print("-")
+    }
+    println()
 }
 
 fun startClient(ipAddress: String, port: Int) {

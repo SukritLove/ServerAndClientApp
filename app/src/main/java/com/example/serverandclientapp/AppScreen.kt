@@ -33,11 +33,20 @@ fun AppScreen(networkUtils: NetworkUtils) {
         deviceIpAddress = networkUtils.getCurrentWifiIpAddress()
     }
 
-    LaunchedEffect(deviceIpAddress) {
+    LaunchedEffect(isServerRunning) {
         // Start the server coroutine when the component is first created
-        launch {
-            withContext(Dispatchers.IO) {
-                startServer(deviceIpAddress.orEmpty(), isServerRunning)
+        if (isServerRunning) {
+            launch {
+                withContext(Dispatchers.IO) {
+                    startServer()
+                    server(deviceIpAddress.orEmpty())
+                }
+            }
+        } else {
+            launch {
+                withContext(Dispatchers.IO) {
+                    stopServer()
+                }
             }
         }
     }
@@ -55,7 +64,7 @@ fun AppScreen(networkUtils: NetworkUtils) {
             isServerRunning = !isServerRunning
         }
         ) {
-            Text(text = if (isServerRunning) "Start Server" else "Stop Server")
+            Text(text = if (!isServerRunning) "Start Server" else "Stop Server")
         }
 
         AddSpace()
