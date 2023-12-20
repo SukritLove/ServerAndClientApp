@@ -8,28 +8,30 @@ import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 
-fun startServer(ipAddress: String) {
-    try {
-        println("Server Start")
-        val serverSocket = ServerSocket()
-        serverSocket.bind(InetSocketAddress(ipAddress, 4001))
 
+fun startServer(ipAddress: String, isServerRunning: Boolean) {
+    try {
+        println("Server ${if (isServerRunning) "Start" else "Stop"}")
+       val serverSocket = ServerSocket()
+        serverSocket.bind(InetSocketAddress(ipAddress, 4001))
         println("Server is listening to :: ${serverSocket.localSocketAddress}")
 
-        while (true) {
+        while (isServerRunning) {
             val clientSocket = serverSocket.accept()
             println("Accept $clientSocket")
-            // Handle client communication in a separate thread or coroutine
             val clientHandlerThread = Thread {
                 handleClient(clientSocket)
             }
             println("Process :: Start Client Handler")
             clientHandlerThread.start()
+
         }
+
     } catch (e: Exception) {
         e.printStackTrace()
     }
 }
+
 
 private fun handleClient(clientSocket: Socket) {
     try {
@@ -56,7 +58,9 @@ private fun handleClient(clientSocket: Socket) {
         println(e)
     } finally {
         clientSocket.close()
+        println("Process :: Client Socket Close")
     }
+
 }
 
 fun startClient(ipAddress: String, port: Int) {

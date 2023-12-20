@@ -27,7 +27,6 @@ fun AppScreen(networkUtils: NetworkUtils) {
     var deviceIpAddress by remember { mutableStateOf<String?>(null) }
     var inputIpAddress by remember { mutableStateOf("") }
     var inputPort by remember { mutableStateOf("") }
-    var buttonText by remember { mutableStateOf("Start Server") }
     var isServerRunning by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
@@ -38,7 +37,7 @@ fun AppScreen(networkUtils: NetworkUtils) {
         // Start the server coroutine when the component is first created
         launch {
             withContext(Dispatchers.IO) {
-                startServer(deviceIpAddress.orEmpty())
+                startServer(deviceIpAddress.orEmpty(), isServerRunning)
             }
         }
     }
@@ -53,15 +52,10 @@ fun AppScreen(networkUtils: NetworkUtils) {
 
         Spacer(modifier = Modifier.padding(10.dp))
         Button(onClick = {
-            if (buttonText.contains("Start")) {
-                buttonText = "Stop Server"
-
-            } else {
-                buttonText = "Start Server"
-            }
+            isServerRunning = !isServerRunning
         }
         ) {
-            Text(text = buttonText)
+            Text(text = if (isServerRunning) "Start Server" else "Stop Server")
         }
 
         AddSpace()
