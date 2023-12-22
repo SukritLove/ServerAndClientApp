@@ -1,8 +1,12 @@
 package com.example.serverandclientapp
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -16,6 +20,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
@@ -26,60 +32,87 @@ import kotlinx.coroutines.withContext
 fun AppScreen(networkUtils: NetworkUtils) {
     var deviceIpAddress by remember { mutableStateOf<String?>(null) }
     var inputIpAddress by remember { mutableStateOf("") }
-    var inputPort by remember { mutableStateOf("") }
-    var isServerRunning by remember { mutableStateOf(false) }
+    var inputPort by remember { mutableStateOf("4001") }
+    var inputMessage by remember { mutableStateOf("") }
+    var clientStarted by remember { mutableStateOf(false) }
+    val message = ClientMessage.message.message
+
+
 
     LaunchedEffect(Unit) {
         deviceIpAddress = networkUtils.getCurrentWifiIpAddress()
     }
 
-    LaunchedEffect(isServerRunning) {
+    LaunchedEffect(deviceIpAddress) {
         // Start the server coroutine when the component is first created
-        if (isServerRunning) {
-            launch {
-                withContext(Dispatchers.IO) {
-                    startServer()
-                    server(deviceIpAddress.orEmpty())
-                }
-            }
-        } else {
-            launch {
-                withContext(Dispatchers.IO) {
-                    stopServer()
-                }
+        launch {
+            withContext(Dispatchers.IO) {
+                startServer(deviceIpAddress.orEmpty())
             }
         }
     }
 
+    LaunchedEffect(clientStarted) {
+        launch(Dispatchers.IO) {
+            startClient(
+                ipAddress = inputIpAddress,
+                port = inputPort,
+                message = inputMessage
+            )
+        }
+    }
+
+
     Column(
         Modifier
-            .fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .fillMaxSize()
+            .padding(40.dp), horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Spacer(modifier = Modifier.padding(50.dp))
         Text(text = "Local Ip Address : ${deviceIpAddress.orEmpty()} on Port 4001")
 
         Spacer(modifier = Modifier.padding(10.dp))
-        Button(onClick = {
-            isServerRunning = !isServerRunning
-        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(100.dp)
+                .background(Color.White)
         ) {
-            Text(text = if (!isServerRunning) "Start Server" else "Stop Server")
+
+            Text(text = message, style = TextStyle(Color.Black), modifier = Modifier.padding(10.dp))
         }
 
         AddSpace()
         CreateTextField(
             value = inputIpAddress,
             onTextChange = { inputIpAddress = it },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            placeholder = "Client IP"
+        )
+
+        Spacer(modifier = Modifier.padding(10.dp))
+        CreateTextField(
+            value = inputPort,
+            onTextChange = { inputPort = it  },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            placeholder = "Client Port"
         )
 
         AddSpace()
         CreateTextField(
-            value = inputPort,
-            onTextChange = { inputPort = it },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            value = inputMessage,
+            onTextChange = { inputMessage = it },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+            placeholder = "Message"
         )
+
+        Spacer(modifier = Modifier.padding(10.dp))
+        CreateButton(
+            btnText = "Send Message",
+            onClickAction = {
+                clientStarted = !clientStarted
+            })
+
     }
 }
 
@@ -87,13 +120,20 @@ fun AppScreen(networkUtils: NetworkUtils) {
 fun CreateTextField(
     value: String,
     onTextChange: (String) -> Unit,
-    keyboardOptions: KeyboardOptions
+    keyboardOptions: KeyboardOptions,
+    placeholder: String
 ) {
-    TextField(
-        value = value,
+    TextField(value = value,
         onValueChange = onTextChange,
-        keyboardOptions = keyboardOptions
-    )
+        keyboardOptions = keyboardOptions,
+        placeholder = { Text(text = placeholder) })
+}
+
+@Composable
+fun CreateButton(btnText: String, onClickAction: () -> Unit) {
+    Button(onClick = onClickAction) {
+        Text(text = btnText)
+    }
 }
 
 @Composable
